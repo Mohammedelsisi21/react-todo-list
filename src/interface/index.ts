@@ -6,3 +6,15 @@ export interface IValdateReactHook {
     pattern?: RegExp
     minLength?: number
 }
+
+
+export interface IErrorResponse {
+  error: {
+    details?: {
+      errors: {
+        message: string;
+      }[];
+    };
+    message?: string;
+  };
+}
