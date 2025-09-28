@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom"
 
 function Navbar() {
-  const userData = true
+  const userData = false
   return (
     <nav className="max-w-lg mx-auto mt-7 mb-20 px-3 py-5 rounded-md shadow bg-[#f5f5f5]" >
       <ul className="flex items-center justify-between">

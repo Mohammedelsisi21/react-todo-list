@@ -21,7 +21,7 @@ interface IFormInput {
 }
 
 const Register = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const rules: IValdateReactHook = {
