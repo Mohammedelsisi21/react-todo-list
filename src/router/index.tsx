@@ -8,9 +8,9 @@ import PageNotFound from "../pages/PagNotFound";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 
-
-
-const isAllowed = false;
+const storageKey = "loginedUser"
+const userLoginData = localStorage.getItem(storageKey)
+const userData = userLoginData ? JSON.parse(userLoginData) : null
 
 
 const router = createBrowserRouter(
@@ -19,9 +19,9 @@ const router = createBrowserRouter(
             <Route path="/" element={<Layout />}errorElement={<ErrorHandler/>}>
                 <Route index element={
                     <ProtectedRoute
-                    isAllowed = {isAllowed}
+                    isAllowed = {userData?.jwt}
                     redirectPath="/login"
-                    // data={}
+                    data={userData}
                     >
                         <HomePage />
                     </ProtectedRoute>
@@ -29,9 +29,9 @@ const router = createBrowserRouter(
                 <Route path="/profile"
                 element = {
                     <ProtectedRoute
-                    isAllowed = {isAllowed}
+                    isAllowed = {userData?.jwt}
                     redirectPath="/login"
-                    // data={}
+                    data={userData}
                     >
                     <h2>Profile page</h2>
                     </ProtectedRoute>
@@ -39,42 +39,34 @@ const router = createBrowserRouter(
                 <Route path="/todos"
                 element = {
                     <ProtectedRoute
-                    isAllowed = {isAllowed}
+                    isAllowed = {userData?.jwt}
                     redirectPath="/login"
-                    // data={}
-                    >
+                    data={userData}>
                     < Todos />
                     </ProtectedRoute>
                 } />
                 <Route path="login"
                 element = {
                     <ProtectedRoute
-                    isAllowed = {!isAllowed}
+                    isAllowed = {!userData?.jwt}
                     redirectPath="/"
-                    // data={}
-                    >
+                    data={userData}>
                     <Login />
                     </ProtectedRoute>
                 } />
                 <Route path="register"
                 element = {
                     <ProtectedRoute
-                    isAllowed = {!isAllowed}
+                    isAllowed = {!userData?.jwt}
                     redirectPath="/login"
-                    // data={}
-                    >
+                    data={userData}>
                     <Register />
                     </ProtectedRoute>
                 } />
             </Route>
-
-
             // ** Not Found Page */
             <Route path="*" element={<PageNotFound />} />
         </>
     )
 )
-
-
-
 export default router

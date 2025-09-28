@@ -5,7 +5,7 @@ import { useForm, type SubmitHandler } from "react-hook-form"
 import type { IErrorResponse, IValdateReactHook } from '../interface'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { registerSchema } from '../validation'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import axiosInstance from '../config'
 import toast from "react-hot-toast";
@@ -120,6 +120,7 @@ const Register = () => {
       </div>
       <Button fullWidth className='mt-2 p-2'>{isLoading ? <LoaderCircle className='animate-spin ml-1.5' /> : null}Register</Button>
       </form>
+      <p className="text-center mt-3 text-sm font-light text-gray-500">have an account? <Link to="/login" className="text-md font-medium text-indigo-600">Login here</Link></p>
     </div>
   )
 }

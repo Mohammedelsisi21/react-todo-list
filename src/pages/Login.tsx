@@ -7,7 +7,7 @@ import { loginSchema } from "../validation"
 import type { IErrorResponse, IValdateReactHook } from "../interface"
 import axiosInstance from "../config"
 import toast from "react-hot-toast"
-import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import type { AxiosError } from "axios"
 import { useState } from "react"
 import { LoaderCircle } from "lucide-react"
@@ -23,20 +23,20 @@ pattern: /^[a-zA-Z]{5,}@gmail\.(com|org)$/,
 };
 
 function Login() {
-  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false);
 
   const { register, handleSubmit, formState: { errors } } = useForm<IFormInput>({
     resolver: yupResolver(loginSchema),
   })
   const onSubmit: SubmitHandler<IFormInput> = async (data) =>
-      { 
+    { 
+      setIsLoading(true)
         console.log(data)
     try {
-      const { status } = await axiosInstance.post("/auth/local", data)
-
-      if(status === 2000) {
-        toast.success("You will navigate to the login page after 2 seconds to home", {
+      const { status, data: userData } = await axiosInstance.post("/auth/local", data)
+      console.log(userData)
+      if(status === 200) {
+        toast.success("You will navigate to the Home page after 2 seconds to login", {
           position: "top-center",
           duration: 1500,
           style: {
@@ -46,9 +46,10 @@ function Login() {
           }
         })
       }
+      localStorage.setItem("loginedUser", JSON.stringify(userData))
       setTimeout(() => {
-        navigate("/")
-      })
+        location.replace("/")
+      },2000)
     } catch (error) {
       console.log(error)
     const errorObj = error as AxiosError<IErrorResponse>
@@ -101,6 +102,7 @@ function Login() {
       </div>
             <Button fullWidth className='mt-2 p-2'>{isLoading ? <LoaderCircle className='animate-spin ml-1.5' /> : null}Login</Button>
       </form>
+      <p className="text-center mt-3 text-sm font-light text-gray-500">Don't have an account? <Link to="/register" className="text-md font-medium text-indigo-600">Register here</Link></p>
     </div>
   )
 }
