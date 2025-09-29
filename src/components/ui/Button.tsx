@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "border border-indigo-400 hover:text-white bg-transparent text-black hover:border-transparent hover:bg-indigo-600 dark:text-gray-700 dark:hover:text-white",
       },
       size: {
-        default: "p-3",
+        default: "px-3 py-2",
         sm: "text-sm px-4 py-2",
       },
       fullWidth: {
