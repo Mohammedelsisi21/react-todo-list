@@ -20,10 +20,10 @@ const Modal = ({isOpen, closed,title,children, description} : IProps) => {
                 transition
                 className="w-full max-w-md rounded-xl bg-white backdrop-blur-sm p-6 duration-300 ease-out data-closed:transform-[scale(95%)] data-closed:opacity-0"
                 >
-                <DialogTitle as="h3" className=" text-xl font-medium text-indigo-600">
+                <DialogTitle as="h3" className=" text-xl font-medium text-gray-600">
                 {title}
                 </DialogTitle>
-                <p className="mt-2 text-sm/6 text-white/50">
+                <p className="text-sm text-black/50 ">
                     {description}
                 </p>
                 <div className="mt-4">
