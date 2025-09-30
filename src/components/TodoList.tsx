@@ -2,11 +2,14 @@ import Button from "./ui/Button"
 import Loading from "./ui/Loading"
 import useAuthenticatedQuery from "../hooks/useAuthenticatedQuery"
 import Modal from "./ui/Model"
-import { useState } from "react"
+import { useState, type ChangeEvent, type FormEvent } from "react"
 import { Field, Input, Label } from "@headlessui/react"
 import clsx from "clsx"
 import type { ITodo } from "../interface"
 import Textarea from "./ui/Textarea"
+import axiosInstance from "../config"
+import { inputError } from "../validation"
+import * as yup from "yup"
 
 const TodoList = () => {
 
@@ -21,10 +24,11 @@ const TodoList = () => {
   const userData = userLoginData ? JSON.parse(userLoginData) : null
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [todoToEdit, setTodoToEdit] = useState<ITodo>(objDefultTodo)
+  const [msgError, setMsgError] = useState<{ title?: string; description?: string }>({});
+  const [isUpdating, setIsUpdating] = useState(false);
   
-  console.log(userData)
   const {isLoading, data} = useAuthenticatedQuery({
-    queryKey: ["todo"],
+    queryKey: ["todoList", `${todoToEdit.documentId}`],
     url: "users/me?populate=todos",
     config: {
       headers: {
@@ -43,6 +47,51 @@ const TodoList = () => {
     setIsEditModalOpen(true)
   }
 
+  const onChangeHandler = (event : ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const {value , name} = event.target
+    setTodoToEdit(
+      {...todoToEdit,
+        [name]: value
+      }
+    )
+  }
+
+  const onSubmitHandler = async (event : FormEvent<HTMLFormElement> ) => {
+    event.preventDefault()
+    setIsUpdating(true)
+    try {
+      await inputError.validate(todoToEdit, {abortEarly: false})
+
+      setMsgError({})
+
+      const {title , description} = todoToEdit
+      const { status } = await axiosInstance.put(`/todos/${todoToEdit.documentId}`,
+      {
+        "data": {title, description},
+      },{
+        headers: {
+          Authorization: `Bearer ${userData.jwt}`
+        }
+      })
+      if(status === 200) {
+        onCloseEdit()
+      }
+    } catch (err : any) {
+       if (err.name === 'ValidationError') {
+      // اجمع كل الأخطاء في object
+      const errors: { [key: string]: string } = {};
+      err.inner.forEach((e: yup.ValidationError) => {
+        if (e.path) errors[e.path] = e.message;
+      });
+      setMsgError(errors);
+    } else {
+      console.log(err);
+    }
+    }finally {
+      setIsUpdating(false)
+    }
+  }
+
   
   if(isLoading) return <Loading />
   console.log(data)
@@ -58,25 +107,29 @@ const TodoList = () => {
       </div>
       )) : <p className="text-center text-lg text-blue-700">No Todos Yet!</p>}
       <Modal title="Edit This Todo" isOpen={isEditModalOpen} closed={()=> onCloseEdit()}>
-        <div className="space-y-2">
-            <div className="w-full max-w-md mt-2">
-          <Field>
-            <Label className="text-lg font-medium text-black capitalize">Edit Title</Label>
-            <Input
-            value={todoToEdit.title}
-              className={clsx(
-                'mt-1 shadow block w-full rounded-lg border-none bg-indigo-500/5 px-3 py-1.5 text-sm/6 text-black',
-                'focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-indigo-600'
-              )}
-            />
-          </Field>
-        </div>
-        <Textarea value={todoToEdit.description}/>
-        <div className="mt-2 flex space-x-1">
-          <Button >Update</Button>
-          <Button variant={"cancel"} onClick={() => onCloseEdit()}>Cancel</Button>
-        </div>
-        </div>
+        <form className="space-y-2" onSubmit={onSubmitHandler}>
+          <div className="w-full max-w-md mt-2">
+            <Field>
+              <Label className="text-lg font-medium text-black capitalize">Edit Title</Label>
+              <Input
+              name="title" onChange={onChangeHandler}
+              value={todoToEdit.title}
+                className={clsx(
+                  'mt-1 shadow block w-full rounded-lg border-none bg-indigo-500/5 px-3 py-1.5 text-sm/6 text-black',
+                  'focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-indigo-600'
+                )}
+              />
+            </Field>
+            {msgError.title && <p className="text-red-500">{msgError.title}</p>}
+          </div>
+          <Textarea
+          name="description" value={todoToEdit.description} onChange={onChangeHandler}/>
+            {msgError.description && <p className="text-red-500">{msgError.description}</p>}
+          <div className="mt-2 flex space-x-1">
+            <Button isLoading={isUpdating}>Update</Button>
+            <Button variant={"cancel"} onClick={() => onCloseEdit()}>Cancel</Button>
+          </div>
+        </form>
       </Modal>
     </div>
   )
