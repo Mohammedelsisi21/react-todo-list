@@ -9,8 +9,9 @@ import Textarea from "./ui/Textarea"
 import axiosInstance from "../config"
 import { inputError } from "../validation"
 import * as yup from "yup"
-import toast from "react-hot-toast"
 import TodoSkeleton from "./TodoSkeleton"
+import Toast from "./ui/Toast"
+import InputErrorMassage from "./ui/InputErrorMassage"
 const TodoList = () => {
   const objDefultTodo = {
     id: 0,
@@ -22,13 +23,18 @@ const TodoList = () => {
   const userLoginData = localStorage.getItem(TokenKey)
   const userData = userLoginData ? JSON.parse(userLoginData) : null
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [todoToEdit, setTodoToEdit] = useState<ITodo>(objDefultTodo)
+  const [todoToAdd, setTodoToAdd] = useState<ITodo>(objDefultTodo)
   const [msgError, setMsgError] = useState<{ title?: string; description?: string }>({});
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isUpdatingLoading, setIsUpdatingLoading] = useState(false);
+  const [isAddLoading, setIsAddLoading] = useState(false);
   const [isDeletedTodo, setIsDeletedTodo] = useState(false);
+  const [quaryVarsion, setQuaryVarsion] = useState(1);
+  
   
   const {isLoading, data} = useAuthenticatedQuery({
-    queryKey: ["todoList", `${todoToEdit.documentId}`],
+    queryKey: ["todoList", `${quaryVarsion}`],
     url: "users/me?populate=todos",
     config: {
       headers: {
@@ -46,6 +52,14 @@ const TodoList = () => {
     setTodoToEdit(todo)
     setIsEditModalOpen(true)
   }
+
+    // ** Added Open And Close Modal
+  const onCloseAdded = () => {
+    setTodoToAdd(objDefultTodo)
+    setIsAddModalOpen(false)
+  }
+  const onOpenAdded = () => setIsAddModalOpen(true)
+
 
   // ** Remove Open And Close Modal
   const onConformOpen = (todo : ITodo) => {
@@ -69,7 +83,7 @@ const TodoList = () => {
       }
     )
   }
-
+  //** Remove */
   const onRemove = async () => {
     try {
       const {status } = await axiosInstance.delete(`todos/${todoToEdit.documentId}`, {
@@ -79,24 +93,27 @@ const TodoList = () => {
       })
       console.log(status)
       if (status === 204) {
-          toast.success("Todo deleted successfully", {
-            position: "top-center",
-            duration: 1500,
-            style: {
-              background: "black",
-              color: "white",
-              width: "fit-content"
-            }
-          })
+          Toast({message: "Todo deleted successfully" , status: "success"})
           onConformClose()
+          setQuaryVarsion(prev => prev + 1)
         }
     } catch (error) {
       console.log(error)
     }
   }
+
+  const onChangeAddHandler = (event : ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const {value , name} = event.target
+    setTodoToAdd({...todoToAdd,
+      [name]: value
+    })
+    console.log(todoToAdd)
+  }
+
+
   const onSubmitHandler = async (event : FormEvent<HTMLFormElement> ) => {
     event.preventDefault()
-    setIsUpdating(true)
+    setIsUpdatingLoading(true)
     try {
       await inputError.validate(todoToEdit, {abortEarly: false})
 
@@ -112,7 +129,10 @@ const TodoList = () => {
         }
       })
       if(status === 200) {
+        Toast({message: "Todo Edit successfully", status: "success"})
         onCloseEdit()
+          setQuaryVarsion(prev => prev + 1)
+        
       }
     } catch (err : any) {
        if (err.name === 'ValidationError') {
@@ -125,7 +145,39 @@ const TodoList = () => {
       console.log(err);
     }
     }finally {
-      setIsUpdating(false)
+      setIsUpdatingLoading(false)
+    }
+  }
+
+  const onSubmitAddHandler = async (event : FormEvent<HTMLFormElement> ) => {
+    event.preventDefault()
+    setIsAddLoading(true)
+    try {
+      await inputError.validate(todoToAdd, {abortEarly: false})
+      setMsgError({})
+      const {title, description} = todoToAdd
+      const { status } = await axiosInstance.post("/todos",
+        {
+          data: {title , description, user: [userData.user.id]}
+        },
+      {headers: {
+        Authorization: `Bearer ${userData.jwt}`
+      }})
+      if( status  === 201 ) {
+        Toast({message: "Todo Added successfully", status: "success"})
+        onCloseAdded()
+          setQuaryVarsion(prev => prev + 1)
+      }
+    } catch (error: any) {
+      if(error.name === "ValidationError") {
+        const errors : {[key: string]:string} = {}
+        error.inner.forEach((e: yup.ValidationError) => {
+          if(e.path) errors[e.path] = e.message
+        })
+        setMsgError(errors)
+      }
+    }finally {
+      setIsAddLoading(false)
     }
   }
 
@@ -136,9 +188,12 @@ const TodoList = () => {
       <TodoSkeleton key={idx}/>
     ))}{" "}
   </div>)
-  
   return (
     <div className="space-y-1">
+      <div className="w-fit mx-auto my-10">
+        <Button variant={"default"} size={"sm"} onClick={onOpenAdded}>Post new todo</Button>
+      </div>
+      
       {data.todos?.length ? data.todos.map((todo : ITodo, index: number) => (
       <div key={todo.id} className="flex items-center justify-between hover:bg-gray-100 duration-300 rounded-md p-3 even:bg-gray-200/50">
         <p className="w-full font-semibold">{index + 1}  - {todo.title}</p>
@@ -149,12 +204,41 @@ const TodoList = () => {
       </div>
       )) : <p className="text-center text-lg text-blue-700">No Todos Yet!</p>}
 
+      {/* // * Added Modal  */}
+      <Modal title="Added the todo" isOpen={isAddModalOpen} closed={() => {onCloseAdded()}}>
+          <form className="space-y-2" onClick={onSubmitAddHandler}>
+          <div className="w-full max-w-md mt-2">
+            <Field>
+              <Label className="text-lg font-medium text-black capitalize">Title</Label>
+              <Input
+              name="title"
+              onChange={onChangeAddHandler}
+                className={clsx(
+                  'mt-1 shadow block w-full rounded-lg border-none bg-indigo-500/5 px-3 py-1.5 text-sm/6 text-black',
+                  'focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-indigo-600'
+                )}
+              />
+            </Field>
+            {msgError.title && <InputErrorMassage msg={msgError.title}/>}
+          </div>
+          <label className="text-lg font-medium text-black capitalize">description</label>
+          <Textarea
+          onChange={onChangeAddHandler}
+          name="description"/>
+            {msgError.description && <InputErrorMassage msg={msgError.description}/>}
+          <div className="mt-2 flex space-x-1">
+            <Button isLoading={isAddLoading}>Add Post</Button>
+            <Button variant={"cancel"} onClick={() => onCloseAdded()}>Cancel</Button>
+          </div>
+        </form>
+      </Modal>
+      
         {/* // * Edit Modal  */}
       <Modal title="Edit This Todo" isOpen={isEditModalOpen} closed={()=> onCloseEdit()}>
         <form className="space-y-2" onSubmit={onSubmitHandler}>
           <div className="w-full max-w-md mt-2">
             <Field>
-              <Label className="text-lg font-medium text-black capitalize">Edit Title</Label>
+              <Label className="text-lg font-medium text-black capitalize">Title</Label>
               <Input
               name="title" onChange={onChangeHandler}
               value={todoToEdit.title}
@@ -170,7 +254,7 @@ const TodoList = () => {
           name="description" value={todoToEdit.description} onChange={onChangeHandler}/>
             {msgError.description && <p className="text-red-500">{msgError.description}</p>}
           <div className="mt-2 flex space-x-1">
-            <Button isLoading={isUpdating}>Update</Button>
+            <Button isLoading={isUpdatingLoading}>Update</Button>
             <Button variant={"cancel"} onClick={() => onCloseEdit()}>Cancel</Button>
           </div>
         </form>
