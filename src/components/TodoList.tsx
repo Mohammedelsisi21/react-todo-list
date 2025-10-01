@@ -12,6 +12,9 @@ import * as yup from "yup"
 import TodoSkeleton from "./TodoSkeleton"
 import Toast from "./ui/Toast"
 import InputErrorMassage from "./ui/InputErrorMassage"
+import { faker } from '@faker-js/faker';
+
+
 const TodoList = () => {
   const objDefultTodo = {
     id: 0,
@@ -83,6 +86,43 @@ const TodoList = () => {
       }
     )
   }
+
+  const onGenerateTodos = async () => {
+
+    for (let todo = 1; todo < 100 ; todo++) {
+    try {
+      const { data } = await axiosInstance.post("/todos",
+        {
+          data: {
+            title: faker.word.verb(6) ,
+            description: faker.lorem.paragraph(2),
+          }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userData.jwt}`
+          }
+        }
+      );
+      console.log(data)
+    } catch (error) {
+      console.log(error)
+  }
+  }
+  }
+
+  
+  const onChangeAddHandler = (event : ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const {value , name} = event.target
+    setTodoToAdd({...todoToAdd,
+      [name]: value
+    })
+    console.log(todoToAdd)
+  }
+
+  
+
+
   //** Remove */
   const onRemove = async () => {
     try {
@@ -101,15 +141,6 @@ const TodoList = () => {
       console.log(error)
     }
   }
-
-  const onChangeAddHandler = (event : ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const {value , name} = event.target
-    setTodoToAdd({...todoToAdd,
-      [name]: value
-    })
-    console.log(todoToAdd)
-  }
-
 
   const onSubmitHandler = async (event : FormEvent<HTMLFormElement> ) => {
     event.preventDefault()
@@ -158,11 +189,17 @@ const TodoList = () => {
       const {title, description} = todoToAdd
       const { status } = await axiosInstance.post("/todos",
         {
-          data: {title , description, user: [userData.user.id]}
+          data: {
+            title,
+            description,
+          }
         },
-      {headers: {
-        Authorization: `Bearer ${userData.jwt}`
-      }})
+        {
+          headers: {
+            Authorization: `Bearer ${userData.jwt}`
+          }
+        }
+      );
       if( status  === 201 ) {
         Toast({message: "Todo Added successfully", status: "success"})
         onCloseAdded()
@@ -181,19 +218,27 @@ const TodoList = () => {
     }
   }
 
-  
-  if(isLoading) return (
-  <div className="space-y-1 p-3">
+
+  return (
+    <div className="space-y-1 mb-10">
+      {isLoading ? <>
+      <div className="flex items-center space-x-2">
+        <div className="h-9 bg-gray-300 rounded-md dark:bg-gray-700 w-32"></div>
+        <div className="h-9 bg-gray-300 rounded-md dark:bg-gray-700 w-32"></div>
+      </div>
+      </> : <>
+        <div className="flex space-x-2 my-10 items-center justify-center">
+        <Button variant={"default"} size={"sm"} onClick={onOpenAdded}>Post new todo</Button>
+        <Button variant={"outline"} size={"sm"} onClick={onGenerateTodos}>Generate todos</Button>
+        </div>
+      </>}
+     {isLoading ?
+     <div className="space-y-1 p-3">
     {Array.from({length: 3}, (_, idx) => (
       <TodoSkeleton key={idx}/>
     ))}{" "}
-  </div>)
-  return (
-    <div className="space-y-1">
-      <div className="w-fit mx-auto my-10">
-        <Button variant={"default"} size={"sm"} onClick={onOpenAdded}>Post new todo</Button>
-      </div>
-      
+  </div>
+  : <>
       {data.todos?.length ? data.todos.map((todo : ITodo, index: number) => (
       <div key={todo.id} className="flex items-center justify-between hover:bg-gray-100 duration-300 rounded-md p-3 even:bg-gray-200/50">
         <p className="w-full font-semibold">{index + 1}  - {todo.title}</p>
@@ -202,7 +247,7 @@ const TodoList = () => {
           <Button size={"sm"} variant={"danger"} onClick={() => onConformOpen(todo)}>Remove</Button>
         </div>
       </div>
-      )) : <p className="text-center text-lg text-blue-700">No Todos Yet!</p>}
+      )) : <p className="text-center text-lg text-blue-700">No Todos Yet!</p>}</>}
 
       {/* // * Added Modal  */}
       <Modal title="Added the todo" isOpen={isAddModalOpen} closed={() => {onCloseAdded()}}>
@@ -275,5 +320,4 @@ const TodoList = () => {
     </div>
   )
 }
-
 export default TodoList
