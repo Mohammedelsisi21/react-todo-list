@@ -94,7 +94,7 @@ const TodoList = () => {
       const { data } = await axiosInstance.post("/todos",
         {
           data: {
-            title: faker.word.verb(6) ,
+            title: faker.word.words(4) ,
             description: faker.lorem.paragraph(2),
           }
         },

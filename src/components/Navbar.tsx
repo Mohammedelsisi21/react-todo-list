@@ -21,9 +21,6 @@ function Navbar() {
             <li className="duration-200 text-lg">
               <NavLink to="/todos">todos</NavLink>
             </li>
-            <li className="duration-200 text-lg">
-              <NavLink to="/profile">Profile</NavLink>
-            </li>
             <button
               className="bg-indigo-500 text-white p-2 rounded-md cursor-pointer"
               onClick={onLogOut}
